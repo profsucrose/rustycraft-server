@@ -1,10 +1,12 @@
-use std::{fs, rc::Rc, sync::Arc};
+use std::{collections::HashSet, fs, rc::Rc, sync::Arc};
 
 use noise::{NoiseFn, OpenSimplex};
 
 use rand::prelude::*;
 
-use crate::rustycraft::{block_map::BlockMap, block_type::{BlockType, index_to_block}};
+use crate::{lib::event::serialize_event, rustycraft::{block_map::BlockMap, block_type::{BlockType, index_to_block}}};
+
+use super::chunk_utils::{from_serialized, to_serialized};
 
 pub const CHUNK_SIZE: usize = 16;
 pub const CHUNK_HEIGHT: usize = 256;
@@ -15,29 +17,16 @@ pub struct Chunk {
     pub blocks_in_mesh: Vec<(usize, usize, usize)>,
     x: i32,
     z: i32,
-    save_path: String,
-    pub serialized_blocks: String
+    save_path: String
+    //pub serialized_blocks: String
 }
 
 impl Chunk {
     pub fn from(save_path: String, contents: String, x: i32, z: i32) -> Chunk {
-        // follows format
-        // [x] [y] [z] [block_index]
-        // [x1] [y1] [z1] [block_index1]
-        // ...
-        let mut blocks = BlockMap::new();
-        let mut blocks_in_mesh = vec![];
-        for lines in contents.lines() {
-            let words: Vec<&str> = lines.split(" ").collect();
-            let x = words[0].parse::<usize>().unwrap();
-            let y = words[1].parse::<usize>().unwrap();
-            let z = words[2].parse::<usize>().unwrap();
-            let block_index = words[3].parse::<usize>().unwrap();
-            blocks.set(x, y, z, index_to_block(block_index));
-            blocks_in_mesh.push((x, y, z));
-        }
-        let mut chunk = Chunk { blocks, blocks_in_mesh, x: x * 16, z: z * 16, save_path, serialized_blocks: String::new() };
-        chunk.reserialize();
+        // follows format (single line)
+        // [amount if > 1][num][block][amount if > 1][num][block]...
+        let (blocks_in_mesh, blocks) = from_serialized(&contents);
+        let chunk = Chunk { blocks, blocks_in_mesh, x: x * 16, z: z * 16, save_path };
         chunk
     }
 
@@ -130,31 +119,13 @@ impl Chunk {
             }
         }
 
-        let mut chunk = Chunk { blocks, blocks_in_mesh, x: x_offset, z: z_offset, save_path, serialized_blocks: String::new() };
-        chunk.reserialize();
+        let mut chunk = Chunk { blocks, blocks_in_mesh, x: x_offset, z: z_offset, save_path };
         chunk.save();
         chunk
     }
 
-    fn reserialize(&mut self) {
-        self.blocks_in_mesh.sort_by(|(a, _, _), (b, _, _)| a.partial_cmp(b).unwrap());
-        //println!("{:?}", self.blocks_in_mesh);
-        let mut serialized_blocks = String::new();
-        for (x, y, z) in self.blocks_in_mesh.iter() {
-            let line = format!("{} {} {} {}\n", *x, *y, *z, self.blocks.get(*x, *y, *z) as usize);
-            serialized_blocks.push_str(line.as_str());
-        }
-        self.serialized_blocks = serialized_blocks;
-    }
-
     fn save(&self) {
-        let mut string = String::new();
-
-
-        for (x, y, z) in self.blocks_in_mesh.iter() {
-            string.push_str(format!("{} {} {} {}\n", *x, *y, *z, self.blocks.get(*x, *y, *z) as usize).as_str())
-        }
-        fs::write(self.save_path.clone(), string)
+        fs::write(self.save_path.clone(), to_serialized(&self.blocks_in_mesh, &self.blocks))
             .expect(format!("Failed to save chunk to {}", self.save_path.clone()).as_str());
     }
 
@@ -175,20 +146,12 @@ impl Chunk {
             self.blocks_in_mesh.push((x, y, z));
         }
         self.save();
-        self.reserialize();
-        //self.gen_mesh();
     }
 
     pub fn can_place_at_local_spot(&self, x: i32, y: i32, z: i32, block: BlockType) -> bool {
         if y < 0 {
             return false
         }
-
-        // if x < 0 || x >= CHUNK_SIZE as i32
-        //     || y >= CHUNK_HEIGHT as i32
-        //     || z < 0 || z >= CHUNK_SIZE as i32 {
-        //     return true
-        // }
 
         let block_spot = self.blocks.get(x as usize, y as usize, z as usize);
         block_spot == BlockType::Air || (block != BlockType::Water && block_spot == BlockType::Water)

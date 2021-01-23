@@ -7,13 +7,15 @@ pub struct Clients {
     clients: Arc<Mutex<HashMap<String, Arc<Mutex<Client>>>>>
 }
 
+impl Clone for Clients {
+    fn clone(&self) -> Self {
+        Clients { clients: self.clients.clone() }
+    }
+}
+
 impl Clients {
     pub fn new() -> Clients {
         Clients { clients: Arc::new(Mutex::new(HashMap::new())) }
-    }
-
-    pub fn clone(&self) -> Clients {
-        Clients { clients: self.clients.clone() }
     }
 
     pub fn add(&self, client: Client) {

@@ -8,6 +8,7 @@ use super::events::RustyCraftMessage;
 
 pub struct Client {
     pub id: String,
+    pub name: Option<String>,
     stream: TcpStream,
     reader: BufReader<TcpStream>,
     writer: LineWriter<TcpStream>
@@ -17,7 +18,10 @@ impl Client {
     pub fn new(stream: TcpStream) -> Client {
         let reader = BufReader::new(stream.try_clone().unwrap());
         let writer = LineWriter::new(stream.try_clone().unwrap());
-        Client { id: Uuid::new_v4().to_string(), stream, reader, writer }
+
+        // name is not set until SetName packet is received
+        let name = None;
+        Client { id: Uuid::new_v4().to_string(), name, stream, reader, writer }
     }
 
     pub fn send(&mut self, message: &String) {
@@ -40,6 +44,6 @@ impl Client {
     pub fn clone(&self) -> Client {
         let reader = BufReader::new(self.stream.try_clone().unwrap());
         let writer = LineWriter::new(self.stream.try_clone().unwrap());
-        Client { id: self.id.clone(), stream: self.stream.try_clone().unwrap(), reader, writer }
+        Client { id: self.id.clone(), stream: self.stream.try_clone().unwrap(), reader, writer, name: self.name.clone() }
     }
 }

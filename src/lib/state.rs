@@ -15,7 +15,10 @@ pub struct State {
 
 impl State {
     pub fn new() -> State {
-        let world = World::new("world");
+        let mut world = World::new("world");
+        // pre-load spawn chunk
+        // for getting spawn y
+        world.get_or_insert_chunk(0, 0);
         State {
             world: Arc::new(Mutex::new(world)),
             names: Arc::new(Mutex::new(HashMap::new())),

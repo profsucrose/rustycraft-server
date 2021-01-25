@@ -6,11 +6,18 @@ use super::direction::Direction;
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub enum RustyCraftMessage {
     Movement { direction: Direction },
-    SetName { name: String },
+    PlayerJoin { name: String },
+    PlayerInit { name: String, x: f32, y: f32, z: f32 },
     PlayerMouseMove { x_offset: f32, y_offset: f32 },
+    PlayerPosition { x: f32, y: f32, z: f32 },
     SetBlock { block: BlockType, world_x: i32, world_y: i32, world_z: i32 },
     GetChunks { coords: Vec<(i32, i32)> },
     ChatMessage { content: String },
+    
+    // echo connection and players id to client
+    // to avoid rendering own model and get data
+    // for all players currently on the server
+    ConnectionData { id: String, players: Vec<(String, String, f32, f32, f32, f32, f32)> /* (id, name, x, y, z, yaw, pitch) */ },
 
     // serialized chunk_blocks in the form of Vec<(usize, usize, usize, usize)>
     // stored as string so serialized chunk blocks can be memoized

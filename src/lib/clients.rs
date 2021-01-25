@@ -18,6 +18,13 @@ impl Clients {
         Clients { clients: Arc::new(Mutex::new(HashMap::new())) }
     }
 
+    pub fn clients(&self) -> Vec<Client> {
+        self.clients.lock().unwrap().values().fold(Vec::new(), |mut client_vec, client| {
+            client_vec.push(client.lock().unwrap().clone());
+            client_vec
+        })
+    }
+
     pub fn add(&self, client: Client) {
         self.clients.lock().unwrap().insert(client.id.clone(), Arc::new(Mutex::new(client)));
     }
@@ -32,10 +39,11 @@ impl Clients {
         client.clone()
     }
 
-    pub fn broadcast(&self, message: &String) {
+    pub fn broadcast(&self, message: &RustyCraftMessage, sender_id: &String) {
+        let message = message.clone();
+        let event = serialize_event(sender_id.clone(), message);
         for (id, client) in self.clients.lock().unwrap().iter() {
-            println!("Broadcasting to {}", id);
-            client.lock().unwrap().send(message);
+            client.lock().unwrap().send(&event);
         }
     }
 

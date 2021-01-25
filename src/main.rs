@@ -5,7 +5,7 @@ use std::{io::{BufRead, BufReader, LineWriter, Lines}, sync::{Arc, Mutex, mpsc::
 use std::net::{TcpListener};
 
 use lib::{event::{RustyCraftEvent, serialize_event}, events::RustyCraftMessage, state::State};
-use rustycraft::{chunk_utils::to_serialized, world::World};
+use rustycraft::{chunk_utils::to_serialized, world::{self, World}};
 use thread::JoinHandle;
 use crate::lib::{client::Client, clients::Clients};
 
@@ -34,23 +34,55 @@ fn create_read_thread(mut client: Client, state: State) -> JoinHandle<()> {
                              let message = serialize_event(String::new(), RustyCraftMessage::ChunkData { chunks });
                              client.send(&message);
                         },
-                        RustyCraftMessage::SetName { name } => {
+                        RustyCraftMessage::PlayerPosition { x, y, z } => {
+                            client.x = *x;
+                            client.y = *y;
+                            client.z = *z;
+                            state.clients.broadcast_to_peers(&data, &client.id);
+                        },
+                        RustyCraftMessage::PlayerJoin { name } => {
                             // 30 char name limit
-                            if client.name.is_none() && name.len() < 30 {
-                                client.name = Some(name.clone());
-                                let message = serialize_event(client.id.clone(), data);
-                                state.clients.broadcast(&message); 
+                            if client.name.lock().unwrap().is_none() && name.len() < 30 {
+                                client.set_name(name.clone());
+                                println!("{:?}", client.name);
+                                let join_y = state.world.lock().unwrap().highest_in_column(0, 0).unwrap();
+                                let message_to_broadcast = RustyCraftMessage::PlayerInit { name: name.clone(), x: 0.0, y: join_y as f32, z: 0.0 };
+                                state.clients.broadcast_to_peers(&message_to_broadcast, &client.id);
+
+                                let connection_data = RustyCraftMessage::ConnectionData { 
+                                    id: client.id.clone(), 
+                                    players: state.clients.clients().iter().map(|c| {
+                                        println!("Client: {} - {:?}", c.id, c.name); 
+                                        (
+                                        c.id.clone(), 
+                                        // tentative, add handling
+                                        match &*c.name.lock().unwrap() { 
+                                            Some(name) => name.clone(), 
+                                            None => String::from("Unnamed Player") 
+                                        }, 
+                                        c.x, 
+                                        c.y, 
+                                        c.z, 
+                                        c.yaw, 
+                                        c.pitch
+                                    )}).collect()
+                                };
+                                let id_message = serialize_event(String::new(), connection_data);
+                                client.send(&id_message)
                             }
                         },
                         RustyCraftMessage::ChatMessage { content: _ } => {
-                            let message = serialize_event(client.id.clone(), data);
-                            state.clients.broadcast(&message);
+                            state.clients.broadcast(&data, &client.id);
                         },
                         RustyCraftMessage::SetBlock { world_x, world_y, world_z, block } => {
                             let mut world = state.world.lock().unwrap();
                             world.set_block(*world_x, *world_y, *world_z, *block);
-                            let message = serialize_event(client.id.clone(), data);
-                            state.clients.broadcast(&message);
+                            state.clients.broadcast(&data, &client.id);
+                        },
+                        RustyCraftMessage::PlayerMouseMove { x_offset, y_offset } => {
+                            client.yaw += x_offset;
+                            client.pitch -= y_offset;
+                            state.clients.broadcast_to_peers(&data, &client.id);
                         },
                         RustyCraftMessage::Disconnect => break, 
                         _ => {
@@ -62,7 +94,7 @@ fn create_read_thread(mut client: Client, state: State) -> JoinHandle<()> {
         }
 
         state.clients.remove(&client.id);
-        state.clients.broadcast(&serialize_event(client.id, RustyCraftMessage::Disconnect));
+        state.clients.broadcast(&RustyCraftMessage::Disconnect, &client.id);
     })
 }
 

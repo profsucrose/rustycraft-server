@@ -11,18 +11,29 @@ pub struct Client {
     stream: TcpStream,
     reader: BufReader<TcpStream>,
     writer: LineWriter<TcpStream>,
-    pub x: f32,
-    pub y: f32,
-    pub z: f32,
-    pub pitch: f32,
-    pub yaw: f32
+    pub x: Arc<Mutex<f32>>,
+    pub y: Arc<Mutex<f32>>,
+    pub z: Arc<Mutex<f32>>,
+    pub pitch: Arc<Mutex<f32>>,
+    pub yaw: Arc<Mutex<f32>> 
 }
 
 impl Clone for Client {
     fn clone(&self) -> Self {
         let reader = BufReader::new(self.stream.try_clone().unwrap());
         let writer = LineWriter::new(self.stream.try_clone().unwrap());
-        Client { id: self.id.clone(), stream: self.stream.try_clone().unwrap(), reader, writer, name: self.name.clone(), x: self.x, y: self.y, z: self.z, pitch: self.pitch, yaw: self.yaw }
+        Client { 
+            id: self.id.clone(), 
+            stream: self.stream.try_clone().unwrap(), 
+            reader, 
+            writer, 
+            name: self.name.clone(), 
+            x: self.x.clone(), 
+            y: self.y.clone(), 
+            z: self.z.clone(), 
+            pitch: self.pitch.clone(), 
+            yaw: self.yaw.clone() 
+        }
     }
 }
 
@@ -33,13 +44,14 @@ impl Client {
 
         // name is not set until SetName packet is received
         let name = Arc::new(Mutex::new(None));
-        Client { id: Uuid::new_v4().to_string(), name, stream, reader, writer, x: 0.0, y: 0.0, z: 0.0, pitch: 0.0, yaw: -90.0 }
+        let x = Arc::new(Mutex::new(0.0));
+        let y = Arc::new(Mutex::new(0.0));
+        let z = Arc::new(Mutex::new(0.0));
+        let pitch = Arc::new(Mutex::new(0.0));
+        let yaw = Arc::new(Mutex::new(-90.0));
+        Client { id: Uuid::new_v4().to_string(), name, stream, reader, writer, x, y, z, pitch, yaw }
     }
-
-    pub fn name(&self) -> Option<String> {
-        self.name.lock().unwrap().clone()
-    }
-
+    
     pub fn set_name(&mut self, name: String) {
         *self.name.lock().unwrap() = Some(name);
     }

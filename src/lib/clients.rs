@@ -33,16 +33,11 @@ impl Clients {
         self.clients.lock().unwrap().remove(id)
             .expect("Failed to remove client");
     }
-
-    pub fn get(&self, id: &String) -> Arc<Mutex<Client>> {
-        let client = self.clients.lock().unwrap().get(id).unwrap().clone();
-        client.clone()
-    }
-
+    
     pub fn broadcast(&self, message: &RustyCraftMessage, sender_id: &String) {
         let message = message.clone();
         let event = serialize_event(sender_id.clone(), message);
-        for (id, client) in self.clients.lock().unwrap().iter() {
+        for (_, client) in self.clients.lock().unwrap().iter() {
             client.lock().unwrap().send(&event);
         }
     }

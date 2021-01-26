@@ -29,17 +29,6 @@ impl BlockMap {
         0
     }
 
-    pub fn highest_in_column_from_y(&self, x: usize, height: usize, z: usize) -> usize {
-        for i in 1..height + 1 {
-            let y = height - i;
-            let block = self.get(x, y, z);
-            if block != BlockType::Air && block != BlockType::Water {
-                return y
-            }
-        }
-        0 
-    }
-
     pub fn set(&mut self, x: usize, y: usize, z: usize, block: BlockType) {
         if x >= CHUNK_SIZE {
             panic!(format!("Segfault, attempted to read map at invalid x: {}", x))

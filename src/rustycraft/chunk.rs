@@ -1,11 +1,7 @@
-use std::{collections::HashSet, fs, rc::Rc, sync::Arc};
-
+use std::{fs, sync::Arc};
 use noise::{NoiseFn, OpenSimplex};
-
 use rand::prelude::*;
-
-use crate::{lib::event::serialize_event, rustycraft::{block_map::BlockMap, block_type::{BlockType, index_to_block}}};
-
+use crate::{rustycraft::{block_map::BlockMap, block_type::BlockType}};
 use super::chunk_utils::{from_serialized, to_serialized};
 
 pub const CHUNK_SIZE: usize = 16;
@@ -119,7 +115,7 @@ impl Chunk {
             }
         }
 
-        let mut chunk = Chunk { blocks, blocks_in_mesh, x: x_offset, z: z_offset, save_path };
+        let chunk = Chunk { blocks, blocks_in_mesh, x: x_offset, z: z_offset, save_path };
         chunk.save();
         chunk
     }
@@ -127,10 +123,6 @@ impl Chunk {
     fn save(&self) {
         fs::write(self.save_path.clone(), to_serialized(&self.blocks_in_mesh, &self.blocks))
             .expect(format!("Failed to save chunk to {}", self.save_path.clone()).as_str());
-    }
-
-    pub fn block_at(&self, x: usize, y: usize, z: usize) -> BlockType {
-        self.blocks.get(x, y, z)
     }
 
     pub fn set_block(&mut self, x: usize, y: usize, z: usize, block: BlockType) {
@@ -148,21 +140,8 @@ impl Chunk {
         self.save();
     }
 
-    pub fn can_place_at_local_spot(&self, x: i32, y: i32, z: i32, block: BlockType) -> bool {
-        if y < 0 {
-            return false
-        }
-
-        let block_spot = self.blocks.get(x as usize, y as usize, z as usize);
-        block_spot == BlockType::Air || (block != BlockType::Water && block_spot == BlockType::Water)
-    }
-    
     pub fn highest_in_column(&self, x: usize, z: usize) -> usize {
         self.blocks.highest_in_column(x, z)
-    }
-
-    pub fn highest_in_column_from_y(&self, x: usize, y: usize, z: usize) -> usize {
-        self.blocks.highest_in_column_from_y(x, y, z)
     }
 }
 

@@ -1,4 +1,4 @@
-use std::{fs, rc::Rc, sync::Arc};
+use std::{fs, sync::Arc};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use noise::{OpenSimplex, Seedable};
@@ -71,17 +71,6 @@ impl World {
         self.chunks.get(chunk_x, chunk_z)
     }
 
-    pub fn get_block(&self, world_x: i32, world_y: i32, world_z: i32) -> Option<BlockType> {
-        let (chunk_x, chunk_z, local_x, local_z) = self.localize_coords_to_chunk(world_x, world_z);
-        let chunk = self.get_chunk(chunk_x, chunk_z);
-        if chunk.is_none() || world_y < 0 {
-            return None
-        }
-
-        let result = Some(chunk.unwrap().block_at(local_x, world_y as usize, local_z));
-        result
-    }
-
     pub fn highest_in_column(&self, world_x: i32, world_z: i32) -> Option<usize> {
         let (chunk_x, chunk_z, local_x, local_z) = self.localize_coords_to_chunk(world_x, world_z);
         let chunk = self.get_chunk(chunk_x, chunk_z);
@@ -90,16 +79,6 @@ impl World {
         }
 
         Some(chunk.unwrap().highest_in_column(local_x, local_z))
-    }
-
-    pub fn highest_in_column_from_y(&self, world_x: i32, world_y: i32, world_z: i32) -> Option<usize> {
-        let (chunk_x, chunk_z, local_x, local_z) = self.localize_coords_to_chunk(world_x, world_z);
-        let chunk = self.get_chunk(chunk_x, chunk_z);
-        if chunk.is_none() {
-            return None
-        }
-
-        Some(chunk.unwrap().highest_in_column_from_y(local_x, world_y as usize, local_z)) 
     }
 
     pub fn set_block(&mut self, world_x: i32, world_y: i32, world_z: i32, block: BlockType) {
@@ -123,10 +102,5 @@ impl World {
         let local_x = ((chunk_x.abs() * 16 + world_x) % 16).abs() as usize;
         let local_z = ((chunk_z.abs() * 16 + world_z) % 16).abs() as usize;
         (chunk_x, chunk_z, local_x, local_z)
-    }
-
-    fn moveable_at(&self, world_x: i32, world_y: i32, world_z: i32) -> bool {
-        let block = self.get_block(world_x, world_y, world_z).unwrap();
-        block == BlockType::Air || block == BlockType::Water
     }
 }

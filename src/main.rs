@@ -1,15 +1,14 @@
 mod lib;
 mod rustycraft;
-
 use std::thread;
 use std::net::{TcpListener};
-
+use std::env;
 use lib::{event::serialize_event, events::RustyCraftMessage, state::State};
 use rustycraft::{chunk_utils::to_serialized};
 use thread::JoinHandle;
 use crate::lib::client::Client;
 
-const PORT: u32 = 25566;
+const DEFAULT_PORT: u16 = 25566;
 
 fn create_read_thread(mut client: Client, state: State) -> JoinHandle<()> {
     thread::spawn(move|| {
@@ -108,10 +107,25 @@ fn create_read_thread(mut client: Client, state: State) -> JoinHandle<()> {
 }
 
 fn main() {
+    let args: Vec<String> = env::args().collect();
+    let mut port_to_host = DEFAULT_PORT;
+    if args.len() > 1 {
+        let port = args[1].parse::<u16>();
+        match port {
+            Ok(port) => {
+                port_to_host = port;
+            },
+            Err(_) => {
+                println!("\u{001b}[31;1mInvalid port number! Please enter a valid number from 0 to 65535\u{001b}[0m");
+                return
+            }
+        }
+    }
+
     // start server
-    let listener = TcpListener::bind(format!("0.0.0.0:{}", PORT)).unwrap();
+    let listener = TcpListener::bind(format!("0.0.0.0:{}", port_to_host)).unwrap();
     println!("\u{001b}[32;1mSuccessfully started RustyCraft server!\u{001b}[0m");
-    println!("\u{001b}[37;1mListening on port {}\u{001b}[0m", PORT);
+    println!("\u{001b}[37;1mListening on port {}\u{001b}[0m", port_to_host);
 
     // initialize server state
     let state = State::new();

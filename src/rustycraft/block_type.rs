@@ -14,7 +14,10 @@ pub enum BlockType {
     Water,
     Sand,
     Snow,
-    Cactus
+    Cactus,
+    StoneBrick,
+    Plank,
+    Brick
 }
 
 pub fn index_to_block(index: usize) -> Option<BlockType> {
@@ -32,6 +35,9 @@ pub fn index_to_block(index: usize) -> Option<BlockType> {
         10 => Some(BlockType::Sand),
         11 => Some(BlockType::Snow),
         12 => Some(BlockType::Cactus),
+        13 => Some(BlockType::StoneBrick),
+        14 => Some(BlockType::Plank),
+        15 => Some(BlockType::Brick),
         _ => None
     }
 }

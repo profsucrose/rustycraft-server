@@ -72,7 +72,15 @@ fn create_read_thread(mut client: Client, state: State) -> JoinHandle<()> {
                                 client.send(&id_message)
                             }
                         },
-                        RustyCraftMessage::ChatMessage { content: _ } => {
+                        RustyCraftMessage::ChatMessage { content } => {
+                            println!(
+                                "\u{001b}[33m<{}> {}\u{001b}[0m", 
+                                match client.name.lock().unwrap().clone() {
+                                    Some(name) => name,
+                                    None => String::from("[Unnamed Player]")
+                                },
+                                content
+                            );
                             state.clients.broadcast(&data, &client.id);
                         },
                         RustyCraftMessage::SetBlock { world_x, world_y, world_z, block } => {

@@ -1,4 +1,4 @@
-use std::{fs, sync::Arc};
+use std::fs;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use noise::{OpenSimplex, Seedable};
@@ -8,7 +8,7 @@ use super::{block_type::BlockType, chunk::Chunk, coord_map::CoordMap};
 #[derive(Clone)]
 pub struct World {
     chunks: CoordMap<Chunk>,
-    simplex: Arc<OpenSimplex>,
+    simplex: OpenSimplex,
     player_chunk_x: i32,
     player_chunk_z: i32,
     pub save_dir: String
@@ -24,7 +24,6 @@ impl World {
 
         let chunks = CoordMap::new();
         let simplex = OpenSimplex::new().set_seed(seed);
-        let simplex = Arc::new(simplex);
         
         let save_dir = format!("worlds/{}", save_dir);
         World { chunks, simplex, player_chunk_x: 0, player_chunk_z: 0, save_dir }
@@ -53,7 +52,7 @@ impl World {
         match self.chunks.contains(chunk_x, chunk_z) {
             true => self.chunks.get(chunk_x, chunk_z).unwrap(),
             false => {
-                let c = Chunk::new(chunk_x, chunk_z, self.simplex.clone(), format!("{}/chunks", self.save_dir));
+                let c = Chunk::new(chunk_x, chunk_z, self.simplex, format!("{}/chunks", self.save_dir));
                 self.chunks.insert(chunk_x, chunk_z, c);
                 self.chunks.get(chunk_x, chunk_z).unwrap()
             }

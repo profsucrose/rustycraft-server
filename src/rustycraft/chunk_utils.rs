@@ -23,7 +23,7 @@ pub fn from_serialized(serialized: &String) -> (BlocksInMesh, BlockMap) {
             let z = iter_in_layer % 16;
             blocks_in_mesh.push((x, y as usize, z));
             let block = index_to_block(byte as usize);
-            blocks.set(x, y as usize, z, block);
+            blocks.set(x, y as usize, z, block.unwrap());
             iter_in_layer += 1;
         }
         i += 1;

@@ -43,7 +43,7 @@ fn create_read_thread(mut client: Client, state: State) -> JoinHandle<()> {
                             if client.name.lock().unwrap().is_none() && name.len() < 30 {
                                 client.set_name(name.clone());
                                 println!(
-                                    "\u{001b}[33m{} joined the server", 
+                                    "\u{001b}[33m{} joined the server\u{001b}[0m", 
                                     match client.name.lock().unwrap().clone() {
                                         Some(name) => name,
                                         None => String::from("[Unnamed Player]")
@@ -96,7 +96,7 @@ fn create_read_thread(mut client: Client, state: State) -> JoinHandle<()> {
         }
 
         println!(
-            "\u{001b}[33m{} left the server", 
+            "\u{001b}[33m{} left the server\u{001b}[0m", 
             match client.name.lock().unwrap().clone() {
                 Some(name) => name,
                 None => String::from("[Unnamed Player]")

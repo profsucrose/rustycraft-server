@@ -19,3 +19,7 @@ cargo run --release <port_number>
 ## Joining
 
 To join a server on the client, click the "Connect to Server" to access the connect GUI and type in the address. Assuming the server is hosted successfully you should be able to click "Connect" and join. 
+
+## Server
+
+I myself am hosting a little RustyCraft server at `craft.profsucrose.dev`. Feel free to hop on if you want to try out this project's server functionality or potentially try to build something collectively!
